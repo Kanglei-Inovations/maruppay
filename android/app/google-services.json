@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "576359449183",
+    "project_id": "maruppay-f8bdd",
+    "storage_bucket": "maruppay-f8bdd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:576359449183:android:6e3c6a1d46cbd6107b51ea",
+        "android_client_info": {
+          "package_name": "com.kangleiinnovations.maruppay"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "576359449183-2a9e2kgcoprdsului5c7bn5phh4t1rbe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kangleiinnovations.maruppay",
+            "certificate_hash": "a82a51ed8725dbaa6b7fbc5ff6157f628d8788a6"
+          }
+        },
+        {
+          "client_id": "576359449183-jjojv5t42i62clm2k0fv5urlde8jas90.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCK78Aa76-bxgG0fGhTJjmy-cXZ6JvwZ9s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "576359449183-jjojv5t42i62clm2k0fv5urlde8jas90.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
