@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF1A73E8); // Trustworthy Blue
-  static const Color primaryDark = Color(0xFF1557B0);
-  static const Color accent = Color(0xFFFBBC04); // Yellow/Gold
-  static const Color background = Color(0xFFF8F9FA); // Clean White/Grey
-  static const Color surface = Colors.white;
-  static const Color cardBg = Colors.white;
-  static const Color border = Color(0xFFDADCE0);
+  // Brand Colors
+  static const Color primary = Color(0xFF10B981); // Emerald Green
+  static const Color gold = Color(0xFFD4AF37);    // Gold
+  static const Color accent = Color(0xFFD4AF37); 
+  
+  // Neutral Colors (Dark Theme)
+  static const Color background = Color(0xFF0F172A); // Dark Slate
+  static const Color surface = Color(0xFF1E293B);    // Light Slate
+  static const Color cardBg = Color(0xFF1E293B);
+  static const Color border = Colors.white10;
 
-  static const Color textPrimary = Color(0xFF202124);
-  static const Color textSecondary = Color(0xFF5F6368);
-  static const Color textMuted = Color(0xFF70757A);
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Colors.white70;
+  static const Color textMuted = Colors.white38;
 
-  static const Color success = Color(0xFF1E8E3E);
-  static const Color error = Color(0xFFD93025);
-  static const Color warning = Color(0xFFF9AB00);
-  static const Color info = Color(0xFF1A73E8);
+  static const Color success = Color(0xFF10B981);
+  static const Color error = Color(0xFFEF4444);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF3B82F6);
 
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primary, primaryDark],
+    colors: [Color(0xFF10B981), Color(0xFF059669)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient goldGradient = LinearGradient(
+    colors: [Color(0xFFD4AF37), Color(0xFFB8860B)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

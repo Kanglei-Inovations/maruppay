@@ -70,4 +70,32 @@ class FirestoreService extends GetxService {
     final snapshot = await reference.get(GetOptions(source: source));
     return builder(snapshot.data() as Map<String, dynamic>, snapshot.id);
   }
+
+  Stream<T> documentStream<T>({
+    required String path,
+    required T Function(Map<String, dynamic> data, String documentID) builder,
+  }) {
+    final reference = _db.doc(path);
+    return reference.snapshots().map((snapshot) {
+      return builder(snapshot.data() as Map<String, dynamic>, snapshot.id);
+    });
+  }
+
+  Future<List<T>> getCollectionOnce<T>({
+    required String path,
+    required T Function(Map<String, dynamic> data, String documentID) builder,
+    Query Function(Query query)? queryBuilder,
+  }) async {
+    Query query = _db.collection(path);
+    if (queryBuilder != null) {
+      query = queryBuilder(query);
+    }
+    final snapshot = await query.get();
+    return snapshot.docs
+        .map(
+          (snapshot) =>
+              builder(snapshot.data() as Map<String, dynamic>, snapshot.id),
+        )
+        .toList();
+  }
 }

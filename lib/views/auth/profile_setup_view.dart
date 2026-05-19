@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../controllers/profile_controller.dart';
-import '../../theme/app_colors.dart';
-import '../../models/user_model.dart';
 
 class ProfileSetupView extends StatefulWidget {
-  const ProfileSetupView({super.key});
+  const ProfileSetupView({Key? key}) : super(key: key);
 
   @override
   State<ProfileSetupView> createState() => _ProfileSetupViewState();
@@ -16,138 +13,154 @@ class _ProfileSetupViewState extends State<ProfileSetupView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _districtController = TextEditingController();
+  
+  bool isUploading = false;
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<ProfileController>();
-    final role = Get.arguments?['role'] ?? UserRole.member;
-
     return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: Text('Setup ${role == UserRole.member ? "Member" : "Admin"} Profile'),
+        title: const Text('Complete Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Personal Details'),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _nameController,
+                label: 'Full Name',
+                hint: 'As per Aadhaar/PAN',
+                icon: Icons.person_outline,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _phoneController,
+                label: 'Phone Number',
+                hint: '+91 00000 00000',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 32),
+              
+              _buildSectionTitle('KYC Verification'),
+              const SizedBox(height: 8),
+              const Text(
+                'Upload documents for account verification and higher limits.',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              
+              Row(
                 children: [
-                  Text(
-                    'Complete your profile',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ).animate().fadeIn().slideY(begin: -0.2),
-                  const SizedBox(height: 8),
-                  Text(
-                    'You are setting up an ${role.toString().split('.').last.toUpperCase()} account.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppColors.primary),
-                  ).animate().fadeIn(delay: 200.ms),
-                  const SizedBox(height: 32),
-                  _buildField(
-                    label: 'Full Name',
-                    controller: _nameController,
-                    icon: Icons.person_outline,
-                    validator: (v) => v!.isEmpty ? 'Enter your name' : null,
-                  ).animate().fadeIn(delay: 300.ms),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    label: 'Mobile Number',
-                    controller: _phoneController,
-                    icon: Icons.phone_android_outlined,
-                    keyboardType: TextInputType.phone,
-                    validator: (v) => v!.length < 10 ? 'Enter valid number' : null,
-                  ).animate().fadeIn(delay: 400.ms),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    label: 'District',
-                    controller: _districtController,
-                    icon: Icons.location_city_outlined,
-                    validator: (v) => v!.isEmpty ? 'Enter district' : null,
-                  ).animate().fadeIn(delay: 500.ms),
-                  const SizedBox(height: 16),
-                  _buildField(
-                    label: 'Full Address',
-                    controller: _addressController,
-                    icon: Icons.home_outlined,
-                    maxLines: 3,
-                    validator: (v) => v!.isEmpty ? 'Enter address' : null,
-                  ).animate().fadeIn(delay: 600.ms),
-                  const SizedBox(height: 48),
-                  SizedBox(
-                    width: double.infinity,
-                    child: Obx(
-                      () => ElevatedButton(
-                        onPressed: controller.isLoading.value
-                            ? null
-                            : () {
-                                if (_formKey.currentState!.validate()) {
-                                  controller.completeProfile(
-                                    fullName: _nameController.text,
-                                    mobileNumber: _phoneController.text,
-                                    address: _addressController.text,
-                                    district: _districtController.text,
-                                    role: role,
-                                  );
-                                }
-                              },
-                        child: controller.isLoading.value
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Text('Save & Continue'),
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 800.ms),
+                  Expanded(child: _buildUploadCard('Aadhaar Card', Icons.badge_outlined)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildUploadCard('PAN Card', Icons.credit_score_outlined)),
                 ],
               ),
-            ),
+              
+              const SizedBox(height: 48),
+              
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      Get.snackbar('Processing', 'Your profile is being verified...');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('SAVE & CONTINUE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                ),
+              ).animate().fadeIn(delay: const Duration(milliseconds: 500)).slideY(begin: 0.2),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildField({
-    required String label,
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        color: Color(0xFFD4AF37),
+        fontWeight: FontWeight.bold,
+        letterSpacing: 2.0,
+        fontSize: 12,
+      ),
+    );
+  }
+
+  Widget _buildTextField({
     required TextEditingController controller,
+    required String label,
+    required String hint,
     required IconData icon,
-    String? Function(String?)? validator,
     TextInputType? keyboardType,
-    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          validator: validator,
           keyboardType: keyboardType,
-          maxLines: maxLines,
+          style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.primary),
-            hintText: 'Enter $label',
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white24),
+            prefixIcon: Icon(icon, color: Colors.white54),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF10B981))),
           ),
+          validator: (value) => value!.isEmpty ? 'This field is required' : null,
         ),
       ],
+    );
+  }
+
+  Widget _buildUploadCard(String title, IconData icon) {
+    return Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10, style: BorderStyle.solid),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Get.snackbar('Upload', 'Selecting $title...'),
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: const Color(0xFFD4AF37), size: 32),
+              const SizedBox(height: 8),
+              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              const Text('Tap to upload', style: TextStyle(color: Colors.white24, fontSize: 10)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

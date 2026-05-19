@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -25,55 +26,75 @@ class ProfileController extends GetxController {
         fetchProfile(user);
       } else {
         currentUser.value = null;
-        Get.offAllNamed(AppRoutes.login);
+        // Only redirect to login if we aren't already there and aren't on splash
+        if (Get.currentRoute != AppRoutes.login && Get.currentRoute != AppRoutes.initial) {
+           Get.offAllNamed(AppRoutes.login);
+        }
       }
     });
   }
 
   Future<void> fetchProfile(dynamic firebaseUser) async {
+    // Bind currentUser to real-time stream from Firestore
+    currentUser.bindStream(
+      _firestoreService.documentStream(
+        path: 'users/${firebaseUser.uid}',
+        builder: (data, id) => UserModel.fromMap(data, id),
+      ),
+    );
+
     try {
       final userDoc = await _firestoreService.getDocument(
         path: 'users/${firebaseUser.uid}',
         builder: (data, id) => UserModel.fromMap(data, id),
       );
       
-      currentUser.value = userDoc;
-      
-      // Update last login
-      await _firestoreService.updateData(
-        path: 'users/${firebaseUser.uid}',
-        data: {'lastLogin': DateTime.now().millisecondsSinceEpoch},
-      );
+      if (userDoc != null) {
+        // Update local cache
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_role', userDoc.role.name);
+          await prefs.setBool('is_profile_complete', userDoc.isProfileComplete);
+        } catch (_) {}
 
-      _redirectUser(userDoc);
+        // Update last login in Firestore
+        await _firestoreService.updateData(
+          path: 'users/${firebaseUser.uid}',
+          data: {'lastLogin': DateTime.now().millisecondsSinceEpoch},
+        );
+
+        // Only redirect if the current dashboard doesn't match the required one
+        _redirectIfNeeded(userDoc);
+      } else {
+        _handleNewUser(firebaseUser);
+      }
     } catch (e) {
-      // User doc doesn't exist, handle new user or incomplete profile
       _handleNewUser(firebaseUser);
     }
   }
 
   void _handleNewUser(dynamic firebaseUser) {
-    // Check if email is in admin list
     bool isAdmin = adminEmails.contains(firebaseUser.email);
-    
-    if (isAdmin) {
-      // Create initial admin doc or redirect to setup with admin role
-      Get.offAllNamed(AppRoutes.profileSetup, arguments: {'role': UserRole.superAdmin});
-    } else {
-      Get.offAllNamed(AppRoutes.profileSetup, arguments: {'role': UserRole.member});
+    if (Get.currentRoute != AppRoutes.profileSetup) {
+      Get.offAllNamed(AppRoutes.profileSetup, arguments: {
+        'role': isAdmin ? UserRole.superAdmin : UserRole.member
+      });
     }
   }
 
-  void _redirectUser(UserModel user) {
-    if (!user.isProfileComplete) {
+  void _redirectIfNeeded(UserModel user) {
+    final bool isAdmin = user.role == UserRole.admin || user.role == UserRole.superAdmin;
+    final String targetRoute = isAdmin ? AppRoutes.adminDashboard : AppRoutes.memberDashboard;
+
+    if (!user.isProfileComplete && Get.currentRoute != AppRoutes.profileSetup) {
       Get.offAllNamed(AppRoutes.profileSetup);
       return;
     }
 
-    if (user.role == UserRole.admin || user.role == UserRole.superAdmin) {
-      Get.offAllNamed(AppRoutes.adminDashboard);
-    } else {
-      Get.offAllNamed(AppRoutes.memberDashboard);
+    // Only perform redirection if we are NOT already on the target dashboard
+    // This prevents the "flash" or "re-opening" of the dashboard
+    if (Get.currentRoute != targetRoute) {
+       Get.offAllNamed(targetRoute);
     }
   }
 
@@ -107,12 +128,26 @@ class ProfileController extends GetxController {
         data: newUser.toMap(),
       );
 
+      // Update local cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role', role.name);
+        await prefs.setBool('is_profile_complete', true);
+      } catch (_) {}
+
       currentUser.value = newUser;
-      _redirectUser(newUser);
+      _redirectIfNeeded(newUser);
     } catch (e) {
       Get.snackbar('Error', 'Failed to save profile: $e');
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> clearCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (_) {}
   }
 }

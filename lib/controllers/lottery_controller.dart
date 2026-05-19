@@ -1,41 +1,64 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
-import '../models/winner_model.dart';
+import '../models/draw_model.dart';
 
 class LotteryController extends GetxController {
-  final isDrawing = false.obs;
-  final showWinnerReveal = false.obs;
-  final currentWinner = Rxn<WinnerModel>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  Rx<DrawModel?> currentDraw = Rx<DrawModel?>(null);
+  RxList<String> activeMembers = <String>[].obs;
+  
+  StreamSubscription<DocumentSnapshot>? _drawSubscription;
+  StreamSubscription<QuerySnapshot>? _membersSubscription;
 
-  // Simulation of eligible members (Pot 1)
-  final eligibleMembers = <String>[].obs;
+  void initializeDrawSequence(String drawId, String groupId) {
+    _listenToDraw(drawId);
+    _listenToGroupMembers(groupId);
+  }
 
-  // Simulated lucky balls (Pot 2)
-  final luckyBalls = List.generate(10, (index) => 'Ball ${index + 1}').obs;
+  void _listenToDraw(String drawId) {
+    _drawSubscription?.cancel();
+    _drawSubscription = _firestore.collection('draws').doc(drawId).snapshots().listen((snapshot) {
+      if (snapshot.exists && snapshot.data() != null) {
+        currentDraw.value = DrawModel.fromMap(snapshot.data()!, snapshot.id);
+        _handleDrawStatusChange(currentDraw.value!.status);
+      }
+    });
+  }
 
-  Future<void> startDraw(String groupId) async {
-    isDrawing.value = true;
-    showWinnerReveal.value = false;
+  void _listenToGroupMembers(String groupId) {
+    _membersSubscription?.cancel();
+    _membersSubscription = _firestore
+        .collection('groups')
+        .doc(groupId)
+        .collection('group_members')
+        .where('status', isEqualTo: 'active')
+        .snapshots()
+        .listen((snapshot) {
+      activeMembers.value = snapshot.docs.map((doc) => doc.id).toList();
+    });
+  }
 
-    // 1. Lock entries and verify payments (Backend would do this)
-    await Future.delayed(const Duration(seconds: 3));
+  void _handleDrawStatusChange(DrawStatus status) {
+    // This allows UI to react seamlessly. UI components should Obx() the currentDraw.status
+    print("Draw Status Changed: $status");
+    switch (status) {
+      case DrawStatus.pot_shaking:
+        // Play pot shaking sound
+        break;
+      case DrawStatus.winner_reveal:
+        // Play fireworks sound
+        break;
+      default:
+        break;
+    }
+  }
 
-    // 2. Select Winner (Secure selection via Cloud Functions simulation)
-    // For the UI, we just simulate the delay for animation
-    await Future.delayed(const Duration(seconds: 5));
-
-    // Mock winner for animation demonstration
-    currentWinner.value = WinnerModel(
-      id: 'mock_win',
-      groupId: groupId,
-      userId: 'user_123',
-      userName: 'John Doe',
-      winningAmount: 50000,
-      cycleNumber: 1,
-      drawDate: DateTime.now(),
-      luckyNumber: '7',
-    );
-
-    isDrawing.value = false;
-    showWinnerReveal.value = true;
+  @override
+  void onClose() {
+    _drawSubscription?.cancel();
+    _membersSubscription?.cancel();
+    super.onClose();
   }
 }

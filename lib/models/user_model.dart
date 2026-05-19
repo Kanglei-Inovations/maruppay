@@ -12,6 +12,7 @@ class UserModel {
   final double walletBalance;
   final List<String> joinedGroups;
   final bool isProfileComplete;
+  final String kycStatus; // pending, verified, rejected
   final bool isActive;
   final DateTime createdAt;
   final DateTime lastLogin;
@@ -28,6 +29,7 @@ class UserModel {
     this.walletBalance = 0.0,
     this.joinedGroups = const [],
     this.isProfileComplete = false,
+    this.kycStatus = 'pending',
     this.isActive = true,
     required this.createdAt,
     required this.lastLogin,
@@ -46,6 +48,7 @@ class UserModel {
       'walletBalance': walletBalance,
       'joinedGroups': joinedGroups,
       'isProfileComplete': isProfileComplete,
+      'kycStatus': kycStatus,
       'isActive': isActive,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'lastLogin': lastLogin.millisecondsSinceEpoch,
@@ -68,6 +71,7 @@ class UserModel {
       walletBalance: (map['walletBalance'] ?? 0.0).toDouble(),
       joinedGroups: List<String>.from(map['joinedGroups'] ?? []),
       isProfileComplete: map['isProfileComplete'] ?? false,
+      kycStatus: map['kycStatus'] ?? 'pending',
       isActive: map['isActive'] ?? true,
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         map['createdAt'] ?? DateTime.now().millisecondsSinceEpoch,
@@ -88,6 +92,7 @@ class UserModel {
     double? walletBalance,
     List<String>? joinedGroups,
     bool? isProfileComplete,
+    String? kycStatus,
     bool? isActive,
     DateTime? lastLogin,
   }) {
@@ -103,6 +108,7 @@ class UserModel {
       walletBalance: walletBalance ?? this.walletBalance,
       joinedGroups: joinedGroups ?? this.joinedGroups,
       isProfileComplete: isProfileComplete ?? this.isProfileComplete,
+      kycStatus: kycStatus ?? this.kycStatus,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt,
       lastLogin: lastLogin ?? this.lastLogin,

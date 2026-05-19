@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../services/auth_service.dart';
+import 'profile_controller.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -19,6 +20,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    await Get.find<ProfileController>().clearCache();
     await _authService.signOut();
   }
 }

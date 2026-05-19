@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/group_controller.dart';
 import '../../models/group_model.dart';
+import '../../routes/app_routes.dart';
 import './create_group_dialog.dart';
 
 class GroupList extends StatelessWidget {
@@ -14,10 +15,10 @@ class GroupList extends StatelessWidget {
     final controller = Get.find<GroupController>();
 
     if (groups.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text('No Marup groups created yet.'),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40.0),
+        child: Center(
+          child: Text('No Marup groups created yet.', style: TextStyle(color: Colors.grey)),
         ),
       );
     }
@@ -31,6 +32,7 @@ class GroupList extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           child: ListTile(
+            onTap: () => Get.toNamed(AppRoutes.adminMembers, arguments: group.id),
             contentPadding: const EdgeInsets.all(16),
             title: Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             subtitle: Column(
@@ -39,13 +41,24 @@ class GroupList extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(group.description),
                 const SizedBox(height: 8),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    _infoPill('₹${group.contributionAmount}', Colors.green),
-                    const SizedBox(width: 8),
-                    _infoPill('${group.totalMembers}/${group.memberLimit} Members', Colors.blue),
-                    const SizedBox(width: 8),
-                    _infoPill(group.groupType.name.capitalizeFirst!, Colors.orange),
+                    _infoPill(
+                      '₹${group.contributionAmount}',
+                      Colors.green,
+                    ),
+
+                    _infoPill(
+                      '${group.totalMembers}/${group.memberLimit} Members',
+                      Colors.blue,
+                    ),
+
+                    _infoPill(
+                      group.groupType.name.capitalizeFirst!,
+                      Colors.orange,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -75,9 +88,9 @@ class GroupList extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );

@@ -15,6 +15,14 @@ class WalletController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    // Initial bind if user already exists
+    final initialUser = _authService.user.value;
+    if (initialUser != null) {
+      _bindWallet(initialUser.uid);
+      _bindTransactions(initialUser.uid);
+    }
+
     ever(_authService.user, (user) {
       if (user != null) {
         _bindWallet(user.uid);

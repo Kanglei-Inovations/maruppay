@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 enum GroupType { monthly, weekly, daily }
 
@@ -22,6 +21,8 @@ class MarupGroup {
   final int currentCycle;
   final int totalCycles;
 
+  final GroupStatus? statusOverride;
+
   MarupGroup({
     required this.id,
     required this.name,
@@ -39,12 +40,17 @@ class MarupGroup {
     required this.createdAt,
     this.currentCycle = 1,
     required this.totalCycles,
+    this.statusOverride,
   });
 
   GroupStatus get status {
+    if (statusOverride != null) return statusOverride!;
     if (!isActive) return GroupStatus.paused;
-    if (totalMembers < memberLimit) return GroupStatus.pending;
-    if (currentCycle > totalCycles) return GroupStatus.completed;
+    
+    final now = DateTime.now();
+    if (now.isBefore(startDate)) return GroupStatus.pending;
+    if (now.isAfter(endDate)) return GroupStatus.completed;
+    
     return GroupStatus.active;
   }
 
@@ -66,6 +72,7 @@ class MarupGroup {
       'createdAt': createdAt.millisecondsSinceEpoch,
       'currentCycle': currentCycle,
       'totalCycles': totalCycles,
+      'status': status.name,
     };
   }
 
@@ -90,6 +97,12 @@ class MarupGroup {
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       currentCycle: map['currentCycle'] ?? 1,
       totalCycles: map['totalCycles'] ?? 12,
+      statusOverride: map['status'] != null
+          ? GroupStatus.values.firstWhere(
+              (e) => e.name == map['status'],
+              orElse: () => GroupStatus.pending,
+            )
+          : null,
     );
   }
 
