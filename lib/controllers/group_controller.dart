@@ -73,9 +73,10 @@ class GroupController extends GetxController {
           minute,
         );
 
-        // If draw time reached (within last 5 minutes to avoid stale triggers)
+        // Auto-navigate if it's within 15 minutes BEFORE or 15 minutes AFTER scheduled time
+        // This covers admin starting early and slightly late arrivals.
         final diff = now.difference(drawDateTime);
-        if (diff.inMinutes >= 0 && diff.inMinutes < 5) {
+        if (diff.inMinutes >= -15 && diff.inMinutes < 15) {
           _navigateToDraw(group.id);
           break;
         }

@@ -121,36 +121,24 @@ class AdminDrawController extends GetxController {
       final pool = List<GroupMember>.from(members)..shuffle();
       
       for (var member in pool) {
-        // 1. PHASE: SELECTING NAME
-        statusMessage.value = 'STEP $step: PICKING NAME...';
-        await _updateDraw(drawId, {
-          'status': 'selecting_name',
-          'currentStep': step,
-        });
+        // COMBINED PHASE: PICKING BOTH AT ONCE
+        statusMessage.value = 'STEP $step: PICKING FROM BOTH POTS...';
         
         final userDoc = await _firestore.getDocument(path: 'users/${member.userId}', builder: (data, id) => data);
         final currentName = userDoc?['fullName'] ?? 'Member';
-
-        await _updateDraw(drawId, {
-          'currentName': currentName,
-        });
-        await Future.delayed(const Duration(seconds: 3));
-
-        // 2. PHASE: SELECTING GEM
-        statusMessage.value = 'STEP $step: PICKING GEM...';
-        await _updateDraw(drawId, {
-          'status': 'selecting_gem',
-        });
-
+        
         // Decide if this is the winner
         final bool isWinnerRound = rand.nextInt(4) == 0 || member == pool.last;
         final String currentGem = isWinnerRound ? 'assets/ruby.png' : 'assets/gems.png';
 
         await _updateDraw(drawId, {
+          'status': 'picking_both',
+          'currentStep': step,
+          'currentName': currentName,
           'currentGem': currentGem,
         });
 
-        await Future.delayed(const Duration(seconds: 4));
+        await Future.delayed(const Duration(seconds: 5));
 
         if (isWinnerRound) {
           hasWinner = true;

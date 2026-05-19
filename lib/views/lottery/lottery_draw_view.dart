@@ -97,6 +97,15 @@ class _LotteryDrawViewState extends State<LotteryDrawView> with TickerProviderSt
         await Future.delayed(const Duration(milliseconds: 500));
         await rightHandController.reverse();
         break;
+      case DrawStatus.picking_both:
+        shakeController.stop();
+        // Run both animations in parallel
+        leftHandController.forward();
+        rightHandController.forward();
+        await Future.delayed(const Duration(milliseconds: 1500));
+        leftHandController.reverse();
+        rightHandController.reverse();
+        break;
       case DrawStatus.winner_reveal:
       case DrawStatus.completed:
         shakeController.stop();
@@ -220,6 +229,7 @@ class _LotteryDrawViewState extends State<LotteryDrawView> with TickerProviderSt
       case DrawStatus.pot_shaking: label = 'SHAKING POTS'; break;
       case DrawStatus.selecting_name: label = 'PICKING NAME...'; break;
       case DrawStatus.selecting_gem: label = 'PICKING GEM...'; break;
+      case DrawStatus.picking_both: label = 'PICKING BOTH...'; break;
       case DrawStatus.winner_reveal: label = 'WINNER FOUND!'; break;
       case DrawStatus.completed: label = 'DRAW COMPLETED'; break;
     }
@@ -328,9 +338,9 @@ class _LotteryDrawViewState extends State<LotteryDrawView> with TickerProviderSt
               // Only show the card if we are in the correct status and have a value
               bool showThisPotItem = false;
               if (isGem) {
-                showThisPotItem = (status == DrawStatus.selecting_gem || status == DrawStatus.winner_reveal || status == DrawStatus.completed) && value != null;
+                showThisPotItem = (status == DrawStatus.selecting_gem || status == DrawStatus.picking_both || status == DrawStatus.winner_reveal || status == DrawStatus.completed) && value != null;
               } else {
-                showThisPotItem = (status == DrawStatus.selecting_name || status == DrawStatus.selecting_gem || status == DrawStatus.winner_reveal || status == DrawStatus.completed) && value != null;
+                showThisPotItem = (status == DrawStatus.selecting_name || status == DrawStatus.picking_both || status == DrawStatus.winner_reveal || status == DrawStatus.completed) && value != null;
               }
 
               return Positioned(

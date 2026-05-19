@@ -5,6 +5,7 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/group_controller.dart';
 import '../../controllers/admin_controller.dart';
 import '../../controllers/admin_draw_controller.dart';
+import '../../models/group_model.dart';
 import '../../services/time_service.dart';
 import '../../theme/app_colors.dart';
 import '../../routes/app_routes.dart';
@@ -79,28 +80,48 @@ class AdminDashboard extends GetView<GroupController> {
 
     final now = timeService.now;
 
-    // 1. Find all active groups
-    final activeGroups = controller.groups.where((g) => g.isActive).toList();
-    if (activeGroups.isEmpty) return const SizedBox.shrink();
+    // 1. Get all groups and sort by draw date/time
+    final sortedGroups = List<MarupGroup>.from(controller.groups);
+    sortedGroups.sort((a, b) {
+      try {
+        final aParts = a.drawTime.split(':');
+        final bParts = b.drawTime.split(':');
+        final aDT = DateTime(a.drawDate.year, a.drawDate.month, a.drawDate.day, int.parse(aParts[0]), int.parse(aParts[1]));
+        final bDT = DateTime(b.drawDate.year, b.drawDate.month, b.drawDate.day, int.parse(bParts[0]), int.parse(bParts[1]));
+        return aDT.compareTo(bDT);
+      } catch (_) {
+        return a.drawDate.compareTo(b.drawDate);
+      }
+    });
 
-    // 2. Map groups to their next full draw DateTime
-    final List<Map<String, dynamic>> timedGroups = [];
-    for (var g in activeGroups) {
+    // 2. Find the most relevant group (either the one happening now/soon, or the next one)
+    MarupGroup? nextGroup;
+    DateTime? nextTime;
+
+    for (var g in sortedGroups) {
       try {
         final parts = g.drawTime.split(':');
         final drawDT = DateTime(g.drawDate.year, g.drawDate.month, g.drawDate.day, int.parse(parts[0]), int.parse(parts[1]));
         
-        if (drawDT.isAfter(now.subtract(const Duration(minutes: 30)))) {
-          timedGroups.add({'group': g, 'time': drawDT});
+        // If it's in the future or was recently (last 2 hours), pick it
+        if (drawDT.isAfter(now.subtract(const Duration(hours: 2)))) {
+          nextGroup = g;
+          nextTime = drawDT;
+          break;
         }
       } catch (_) {}
     }
 
-    if (timedGroups.isEmpty) return const SizedBox.shrink();
-
-    timedGroups.sort((a, b) => (a['time'] as DateTime).compareTo(b['time'] as DateTime));
-    final nextGroup = timedGroups.first['group'];
-    final nextTime = timedGroups.first['time'] as DateTime;
+    // Fallback to the first group if none matched the "recent" criteria
+    nextGroup ??= sortedGroups.first;
+    if (nextTime == null) {
+      try {
+        final parts = nextGroup.drawTime.split(':');
+        nextTime = DateTime(nextGroup.drawDate.year, nextGroup.drawDate.month, nextGroup.drawDate.day, int.parse(parts[0]), int.parse(parts[1]));
+      } catch (_) {
+        nextTime = nextGroup.drawDate;
+      }
+    }
 
     return Container(
       width: double.infinity,
@@ -132,7 +153,7 @@ class AdminDashboard extends GetView<GroupController> {
                     style: const TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ],
               )
-            : _buildDrawActionButton(nextGroup, drawController, nextTime, now)
+            : _buildDrawActionButton(nextGroup!, drawController, nextTime!, now)
           ),
           
           const SizedBox(height: 12),
@@ -142,29 +163,36 @@ class AdminDashboard extends GetView<GroupController> {
     );
   }
 
-  Widget _buildDrawActionButton(dynamic nextGroup, AdminDrawController drawController, DateTime drawTime, DateTime now) {
-    final bool isReady = now.isAfter(drawTime.subtract(const Duration(minutes: 5)));
+  Widget _buildDrawActionButton(MarupGroup nextGroup, AdminDrawController drawController, DateTime drawTime, DateTime now) {
+    // Admins can always start the draw if it's within 15 minutes of scheduled time OR if it's already overdue
+    final bool isReady = now.isAfter(drawTime.subtract(const Duration(minutes: 15)));
 
-    return Opacity(
-      opacity: isReady ? 1.0 : 0.5,
-      child: SizedBox(
-        height: 45,
-        width: 200,
-        child: ElevatedButton(
-          onPressed: isReady ? () => drawController.startManualSequence(
+    return SizedBox(
+      height: 45,
+      width: 200,
+      child: ElevatedButton(
+        onPressed: () {
+          drawController.startManualSequence(
             nextGroup.id, 
             nextGroup.id, 
             nextGroup.contributionAmount * nextGroup.totalMembers,
-          ) : () => Get.snackbar('Too Early', 'Draw button will activate 5 minutes before scheduled time.', snackPosition: SnackPosition.BOTTOM),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.gold.withOpacity(0.2),
-            foregroundColor: AppColors.gold,
-            side: const BorderSide(color: AppColors.gold, width: 1),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          ),
-          child: Text(now.isAfter(drawTime) ? 'START OVERDUE DRAW' : 'START DRAW NOW', 
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          );
+          Get.toNamed(
+            AppRoutes.lottery,
+            parameters: {
+              'drawId': nextGroup.id,
+              'groupId': nextGroup.id,
+            },
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isReady ? AppColors.gold.withOpacity(0.2) : Colors.white10,
+          foregroundColor: isReady ? AppColors.gold : Colors.white38,
+          side: BorderSide(color: isReady ? AppColors.gold : Colors.white10, width: 1),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         ),
+        child: Text(now.isAfter(drawTime) ? 'START OVERDUE DRAW' : 'START DRAW NOW', 
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
       ),
     );
   }

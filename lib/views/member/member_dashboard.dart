@@ -118,7 +118,8 @@ class MemberDashboard extends GetView<WalletController> {
         final parts = g.drawTime.split(':');
         final drawDT = DateTime(g.drawDate.year, g.drawDate.month, g.drawDate.day, int.parse(parts[0]), int.parse(parts[1]));
         
-        if (drawDT.isAfter(now.subtract(const Duration(minutes: 30)))) {
+        // Show if it's in the future or recently overdue (last 2 hours)
+        if (drawDT.isAfter(now.subtract(const Duration(hours: 2)))) {
           timedGroups.add({'group': g, 'time': drawDT});
         }
       } catch (_) {}
@@ -263,6 +264,18 @@ class MemberDashboard extends GetView<WalletController> {
 
   Widget _buildMemberGroupCard(BuildContext context, GroupController controller, MarupGroup group, bool isJoined) {
     final isFull = group.totalMembers >= group.memberLimit;
+    final timeService = Get.find<TimeService>();
+    final now = timeService.now;
+    
+    // Calculate if it's draw time (within 15 mins before or any time after)
+    bool isDrawTime = false;
+    try {
+      final parts = group.drawTime.split(':');
+      final drawDT = DateTime(group.drawDate.year, group.drawDate.month, group.drawDate.day, int.parse(parts[0]), int.parse(parts[1]));
+      isDrawTime = now.isAfter(drawDT.subtract(const Duration(minutes: 15)));
+    } catch (_) {}
+
+    final bool canWatch = isJoined && (group.status == GroupStatus.active || isDrawTime);
     
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -309,7 +322,7 @@ class MemberDashboard extends GetView<WalletController> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    if (group.status == GroupStatus.active && isJoined) {
+                    if (canWatch) {
                       Get.toNamed(AppRoutes.lottery, parameters: {'drawId': group.id, 'groupId': group.id});
                     } else if (!isJoined) {
                       if (!isFull) {
@@ -322,14 +335,14 @@ class MemberDashboard extends GetView<WalletController> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: (group.status == GroupStatus.active && isJoined) ? AppColors.primary : (isJoined ? Colors.white10 : (isFull ? Colors.grey.shade800 : AppColors.primary)),
-                    foregroundColor: (isJoined && group.status != GroupStatus.active) ? Colors.white70 : Colors.white,
+                    backgroundColor: canWatch ? AppColors.primary : (isJoined ? Colors.white10 : (isFull ? Colors.grey.shade800 : AppColors.primary)),
+                    foregroundColor: (isJoined && !canWatch) ? Colors.white70 : Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text(group.status == GroupStatus.active && isJoined ? 'WATCH LIVE DRAW' : (isJoined ? 'JOINED' : (isFull ? 'FULL' : 'JOIN NOW'))),
+                  child: Text(canWatch ? 'WATCH LIVE DRAW' : (isJoined ? 'JOINED' : (isFull ? 'FULL' : 'JOIN NOW'))),
                 ),
               ),
-              if (isJoined && group.status == GroupStatus.pending) ...[
+              if (isJoined && group.status == GroupStatus.pending && !isDrawTime) ...[
                 const SizedBox(width: 12),
                 IconButton(
                   icon: const Icon(Icons.logout, color: Colors.redAccent, size: 20),

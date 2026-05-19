@@ -6,6 +6,7 @@ enum DrawStatus {
   pot_shaking,
   selecting_name,
   selecting_gem,
+  picking_both,
   winner_reveal,
   completed
 }
