@@ -60,15 +60,15 @@ class AdminDashboard extends GetView<GroupController> {
             
             _buildStatGrid(),
             const SizedBox(height: 32),
-            
-            _buildSectionTitle('KYC Verification Pending'),
-            const SizedBox(height: 16),
-            Obx(() => _buildKYCList(adminController)),
-            
             const SizedBox(height: 32),
             _buildSectionTitle('Manage Groups'),
             const SizedBox(height: 16),
             Obx(() => _buildGroupList()),
+            _buildSectionTitle('KYC Verification Pending'),
+            const SizedBox(height: 16),
+            Obx(() => _buildKYCList(adminController)),
+            
+
           ],
         ),
       ),
