@@ -86,15 +86,24 @@ class ProfileController extends GetxController {
     final bool isAdmin = user.role == UserRole.admin || user.role == UserRole.superAdmin;
     final String targetRoute = isAdmin ? AppRoutes.adminDashboard : AppRoutes.memberDashboard;
 
-    if (!user.isProfileComplete && Get.currentRoute != AppRoutes.profileSetup) {
-      Get.offAllNamed(AppRoutes.profileSetup);
+    // 1. If profile is incomplete, force them to setup
+    if (!user.isProfileComplete) {
+      if (Get.currentRoute != AppRoutes.profileSetup) {
+        Get.offAllNamed(AppRoutes.profileSetup);
+      }
       return;
     }
 
-    // Only perform redirection if we are NOT already on the target dashboard
-    // This prevents the "flash" or "re-opening" of the dashboard
-    if (Get.currentRoute != targetRoute) {
-       Get.offAllNamed(targetRoute);
+    // 2. If profile is complete and we are on a transitional page, redirect to dashboard
+    final List<String> transitionalRoutes = [
+      AppRoutes.initial,
+      AppRoutes.login,
+      AppRoutes.splash,
+      AppRoutes.profileSetup,
+    ];
+
+    if (transitionalRoutes.contains(Get.currentRoute)) {
+      Get.offAllNamed(targetRoute);
     }
   }
 

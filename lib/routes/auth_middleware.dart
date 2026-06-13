@@ -22,12 +22,24 @@ class AuthMiddleware extends GetMiddleware {
       return const RouteSettings(name: AppRoutes.profileSetup);
     }
 
-    // FOR TESTING: Allow all users to access admin dashboard and test utilities
-    // if (route == AppRoutes.adminDashboard && 
-    //     user.role != UserRole.admin && 
-    //     user.role != UserRole.superAdmin) {
-    //   return const RouteSettings(name: AppRoutes.memberDashboard);
-    // }
+    // Role-based guarding
+    final bool isAdmin = user.role == UserRole.admin || user.role == UserRole.superAdmin;
+
+    // Admin pages protection
+    final adminRoutes = [
+      AppRoutes.adminDashboard,
+      AppRoutes.adminMembers,
+      AppRoutes.testUtility,
+    ];
+
+    if (adminRoutes.contains(route) && !isAdmin) {
+      return const RouteSettings(name: AppRoutes.memberDashboard);
+    }
+
+    // Member dashboard protection (optional, depends if you want admins to see member view)
+    if (route == AppRoutes.memberDashboard && isAdmin) {
+      return const RouteSettings(name: AppRoutes.adminDashboard);
+    }
 
     return null;
   }

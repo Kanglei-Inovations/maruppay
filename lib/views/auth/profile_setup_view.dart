@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../controllers/profile_controller.dart';
+import '../../models/user_model.dart';
 
 class ProfileSetupView extends StatefulWidget {
   const ProfileSetupView({Key? key}) : super(key: key);
@@ -13,8 +15,18 @@ class _ProfileSetupViewState extends State<ProfileSetupView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _districtController = TextEditingController();
   
-  bool isUploading = false;
+  final ProfileController _profileController = Get.find<ProfileController>();
+  late UserRole _assignedRole;
+
+  @override
+  void initState() {
+    super.initState();
+    // Get role from arguments, default to member
+    _assignedRole = Get.arguments?['role'] ?? UserRole.member;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,71 +38,105 @@ class _ProfileSetupViewState extends State<ProfileSetupView> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle('Personal Details'),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _nameController,
-                label: 'Full Name',
-                hint: 'As per Aadhaar/PAN',
-                icon: Icons.person_outline,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _phoneController,
-                label: 'Phone Number',
-                hint: '+91 00000 00000',
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 32),
-              
-              _buildSectionTitle('KYC Verification'),
-              const SizedBox(height: 8),
-              const Text(
-                'Upload documents for account verification and higher limits.',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              
-              Row(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _buildUploadCard('Aadhaar Card', Icons.badge_outlined)),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildUploadCard('PAN Card', Icons.credit_score_outlined)),
+                  _buildSectionTitle('Personal Details'),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _nameController,
+                    label: 'Full Name',
+                    hint: 'As per Aadhaar/PAN',
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _phoneController,
+                    label: 'Phone Number',
+                    hint: '+91 00000 00000',
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _addressController,
+                    label: 'Address',
+                    hint: 'Locality/Street/Village',
+                    icon: Icons.home_outlined,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _districtController,
+                    label: 'District',
+                    hint: 'e.g. Imphal West',
+                    icon: Icons.location_city_outlined,
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  _buildSectionTitle('KYC Verification'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Upload documents for account verification and higher limits.',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: _buildUploadCard('Aadhaar Card', Icons.badge_outlined)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildUploadCard('PAN Card', Icons.credit_score_outlined)),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 48),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: _submitProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('SAVE & CONTINUE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    ),
+                  ).animate().fadeIn(delay: const Duration(milliseconds: 500)).slideY(begin: 0.2),
                 ],
               ),
-              
-              const SizedBox(height: 48),
-              
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Get.snackbar('Processing', 'Your profile is being verified...');
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('SAVE & CONTINUE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-                ),
-              ).animate().fadeIn(delay: const Duration(milliseconds: 500)).slideY(begin: 0.2),
-            ],
+            ),
           ),
-        ),
+          Obx(() => _profileController.isLoading.value 
+            ? Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF10B981)),
+                ),
+              ) 
+            : const SizedBox.shrink()),
+        ],
       ),
     );
+  }
+
+  void _submitProfile() {
+    if (_formKey.currentState!.validate()) {
+      _profileController.completeProfile(
+        fullName: _nameController.text.trim(),
+        mobileNumber: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        district: _districtController.text.trim(),
+        role: _assignedRole,
+      );
+    }
   }
 
   Widget _buildSectionTitle(String title) {

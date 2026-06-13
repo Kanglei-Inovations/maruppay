@@ -38,93 +38,103 @@ class AdminGroupMembersView extends GetView<AdminGroupMembersController> {
           return const Center(child: Text('No members have joined yet.', style: TextStyle(color: AppColors.textMuted)));
         }
 
-        return Column(
-          children: [
-            _buildGroupStats(),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Text('MEMBERS LIST', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 12)),
-                  Spacer(),
-                  Text('PAYMENT STATUS', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
-                ],
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildGroupStats(),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('MEMBERS MANAGEMENT', style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 12)),
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: controller.members.length,
-                itemBuilder: (context, index) {
-                  final member = controller.members[index];
-                  final profile = controller.memberProfiles[member.userId];
-                  final wallet = controller.memberWallets[member.userId];
-                  final isPaid = member.paymentStatus == 'paid';
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: DataTable(
+                  columnSpacing: 20,
+                  headingRowColor: WidgetStateProperty.all(AppColors.surface),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('MEMBER', style: TextStyle(color: AppColors.gold, fontSize: 12))),
+                    DataColumn(label: Text('MOBILE', style: TextStyle(color: AppColors.gold, fontSize: 12))),
+                    DataColumn(label: Text('WALLET', style: TextStyle(color: AppColors.gold, fontSize: 12))),
+                    DataColumn(label: Text('STATUS', style: TextStyle(color: AppColors.gold, fontSize: 12))),
+                    DataColumn(label: Text('ACTION', style: TextStyle(color: AppColors.gold, fontSize: 12))),
+                  ],
+                  rows: controller.members.map((member) {
+                    final profile = controller.memberProfiles[member.userId];
+                    final wallet = controller.memberWallets[member.userId];
+                    final isPaid = member.paymentStatus == 'paid';
+                    final hasBalance = (wallet?.balance ?? 0) >= (controller.group.value?.contributionAmount ?? 0);
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isPaid ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.05)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.white10,
-                              child: Text(profile?.fullName.substring(0, 1).toUpperCase() ?? '?', 
-                                style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(profile?.fullName ?? 'Loading...', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                                  Text(profile?.mobileNumber ?? 'N/A', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                                ],
+                    return DataRow(
+                      color: WidgetStateProperty.resolveWith<Color?>((states) => isPaid ? AppColors.primary.withOpacity(0.02) : null),
+                      cells: [
+                        DataCell(
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: isPaid ? AppColors.primary.withOpacity(0.1) : Colors.white10,
+                                child: Text(profile?.fullName.substring(0, 1).toUpperCase() ?? '?', 
+                                  style: TextStyle(color: isPaid ? AppColors.primary : AppColors.gold, fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
-                            ),
-                            _buildPaymentChip(isPaid),
-                          ],
+                              const SizedBox(width: 10),
+                              Text(profile?.fullName ?? '...', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
                         ),
-                        Divider(height: 24, color: Colors.white.withOpacity(0.05)),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Wallet Balance', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                                Text('₹${wallet?.balance.toStringAsFixed(2) ?? '0.00'}', 
-                                  style: TextStyle(color: (wallet?.balance ?? 0) >= (controller.group.value?.contributionAmount ?? 0) ? Colors.green : Colors.redAccent, 
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
-                              ],
-                            ),
-                            if (!isPaid)
-                              ElevatedButton(
-                                onPressed: () => controller.collectFromWallet(member),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.gold.withOpacity(0.1),
-                                  foregroundColor: AppColors.gold,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: AppColors.gold, width: 0.5)),
+                        DataCell(Text(profile?.mobileNumber ?? 'N/A', style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
+                        DataCell(
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('₹${wallet?.balance.toStringAsFixed(0) ?? '0'}', 
+                                style: TextStyle(color: hasBalance ? Colors.green : Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                              if (!hasBalance && !isPaid)
+                                const Text('Low Balance', style: TextStyle(color: Colors.redAccent, fontSize: 8)),
+                            ],
+                          ),
+                        ),
+                        DataCell(
+                          InkWell(
+                            onTap: () => controller.togglePaymentStatus(member),
+                            borderRadius: BorderRadius.circular(8),
+                            child: _buildPaymentChip(isPaid),
+                          ),
+                        ),
+                        DataCell(
+                          Row(
+                            children: [
+                              if (!isPaid)
+                                IconButton(
+                                  icon: Icon(Icons.account_balance_wallet, color: hasBalance ? AppColors.primary : Colors.grey, size: 22),
+                                  tooltip: hasBalance ? 'Auto-Collect ₹${controller.group.value?.contributionAmount}' : 'Insufficient Balance',
+                                  onPressed: hasBalance ? () => controller.collectFromWallet(member) : null,
                                 ),
-                                child: const Text('Collect Amount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              IconButton(
+                                icon: Icon(isPaid ? Icons.remove_circle_outline : Icons.check_circle, 
+                                  color: isPaid ? Colors.redAccent.withOpacity(0.7) : AppColors.gold, size: 22),
+                                tooltip: isPaid ? 'Mark as Unpaid' : 'Manually Mark Paid',
+                                onPressed: () => controller.togglePaymentStatus(member),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
-                    ),
-                  ).animate().fadeIn(delay: Duration(milliseconds: index * 100)).slideX(begin: 0.05);
-                },
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 40),
+            ],
+          ),
         );
       }),
     );
